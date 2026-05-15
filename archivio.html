@@ -557,9 +557,9 @@ function FolderView({ folderId, user, onNav }) {
           <h2>File ({files.length})</h2>
           <div style={{display:'flex',gap:8}}>
             <button className="btn btn-primary btn-sm" onClick={()=>fileInput.current?.click()} disabled={uploading}>
-              {uploading ? 'Caricamento...' : '↑ Carica file'}
+              {uploading ? 'Caricamento...' : '+ Carica file'}
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={load}>⟳</button>
+            <button className="btn btn-ghost btn-sm" onClick={load}>Aggiorna lista</button>
           </div>
           <input ref={fileInput} type="file" style={{display:'none'}} onChange={handleUpload} />
         </div>
@@ -580,9 +580,9 @@ function FolderView({ folderId, user, onNav }) {
                     <td style={{fontSize:'.82rem',color:'var(--gray-400)'}}>{timeAgo(f.updatedAt)}</td>
                     <td>
                       <div style={{display:'flex',gap:6}}>
-                        <button className="btn btn-ghost btn-sm" onClick={()=>handleDownload(f._id, f.nome)}>↓</button>
-                        <button className="btn btn-ghost btn-sm" onClick={()=>handleNewVersion(f._id)}>↑ v{f.versioneAttuale+1}</button>
-                        {(user.ruolo==='superadmin') && <button className="btn btn-sm" style={{color:'var(--red)',background:'none',border:'none',fontSize:'.78rem'}} onClick={()=>handleDelete(f._id)}>✕</button>}
+                        <button className="btn btn-primary btn-sm" onClick={()=>handleDownload(f._id, f.nome)}>Scarica</button>
+                        <button className="btn btn-ghost btn-sm" onClick={()=>handleNewVersion(f._id)}>Aggiorna</button>
+                        {(user.ruolo==='superadmin') && <button className="btn btn-sm" style={{color:'var(--red)',background:'none',border:'1px solid var(--red)',borderRadius:'8px',fontSize:'.78rem',padding:'6px 12px'}} onClick={()=>handleDelete(f._id)}>Elimina</button>}
                       </div>
                     </td>
                   </tr>
