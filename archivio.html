@@ -233,6 +233,13 @@ function formatSize(bytes) {
   return (bytes/1048576).toFixed(1) + ' MB';
 }
 
+
+function isFileOwner(file, user) {
+  if (!file.caricatoDa) return false;
+  const ownerId = typeof file.caricatoDa === 'object' ? file.caricatoDa._id : file.caricatoDa;
+  return ownerId === user.id;
+}
+
 // ─── Login ───
 function LoginScreen({ onLogin, onForgot }) {
   const [email, setEmail] = useState('');
@@ -474,6 +481,7 @@ function FolderView({ folderId, user, onNav }) {
   const [uploading, setUploading] = useState(false);
   const fileInput = useRef(null);
   const [showVersions, setShowVersions] = useState(null);
+  const [showNewSubfolder, setShowNewSubfolder] = useState(false);
 
   const load = useCallback(() => {
     api(`/folders/${folderId}`).then(r => { setFolder(r.data.folder); setSubfolders(r.data.subfolders || []); }).catch(()=>{});
@@ -560,6 +568,10 @@ function FolderView({ folderId, user, onNav }) {
         <div className="card-header">
           <h2>File ({files.length})</h2>
           <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-ghost btn-sm" onClick={()=>setShowNewSubfolder(true)} style={{gap:5}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+              Nuova sottocartella
+            </button>
             <button className="btn btn-primary btn-sm" onClick={()=>fileInput.current?.click()} disabled={uploading}>
               {uploading ? 'Caricamento in corso...' : '+ Carica nuovo documento'}
             </button>
@@ -603,7 +615,7 @@ function FolderView({ folderId, user, onNav }) {
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                           Storico versioni
                         </button>}
-                        {(user.ruolo==='superadmin') && <button className="btn btn-ghost btn-sm" onClick={()=>handleDelete(f._id)} style={{color:'var(--red)',borderColor:'rgba(220,38,38,0.3)',gap:5}}>
+                        {(user.ruolo==='superadmin' || isFileOwner(f, user)) && <button className="btn btn-ghost btn-sm" onClick={()=>handleDelete(f._id)} style={{color:'var(--red)',borderColor:'rgba(220,38,38,0.3)',gap:5}}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                           Elimina
                         </button>}
@@ -616,6 +628,27 @@ function FolderView({ folderId, user, onNav }) {
           </table>
         )}
       </div>
+      {showNewSubfolder && (
+        <div className="modal-overlay" onClick={()=>setShowNewSubfolder(false)}>
+          <form className="modal" onClick={e=>e.stopPropagation()} onSubmit={async (e)=>{
+            e.preventDefault();
+            const nome = e.target.elements.subname.value.trim();
+            if (!nome) return;
+            try {
+              await api('/folders', { method:'POST', body:JSON.stringify({ nome, parent:folderId }) });
+              setShowNewSubfolder(false);
+              load();
+            } catch(err) { alert(err.message); }
+          }}>
+            <h3>Nuova sottocartella</h3>
+            <div className="modal-field"><label>Nome</label><input name="subname" required autoFocus /></div>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-ghost" onClick={()=>setShowNewSubfolder(false)}>Annulla</button>
+              <button type="submit" className="btn btn-primary">Crea</button>
+            </div>
+          </form>
+        </div>
+      )}
       {showVersions && <VersionHistory fileId={showVersions._id} fileName={showVersions.nome} onClose={()=>setShowVersions(null)} onDownload={handleDownload} />}
     </div>
   );
