@@ -666,6 +666,7 @@ function App() {
   const [notifCount, setNotifCount] = useState(0);
   const [showPerms, setShowPerms] = useState(null);
   const [showNewFolder, setShowNewFolder] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem('dp_user');
@@ -715,7 +716,7 @@ function App() {
           <button className={"nav-tab"+(view==='notifiche'?' active':'')} onClick={()=>navigate('notifiche')}>Notifiche{notifCount>0 && <span className="notif-badge" style={{marginLeft:6}}>{notifCount}</span>}</button>
         </div>
 
-        {view === 'dashboard' && <Dashboard user={user} onNav={navigate} />}
+        {view === 'dashboard' && <Dashboard key={refreshKey} user={user} onNav={navigate} />}
         {view === 'folder' && viewId && (
           <div>
             <FolderView folderId={viewId} user={user} onNav={navigate} />
@@ -726,7 +727,7 @@ function App() {
         {view === 'notifiche' && <NotificheView />}
       </div>
 
-      {showNewFolder && <NewFolderModal onClose={()=>setShowNewFolder(false)} onCreated={()=>navigate('dashboard')} />}
+      {showNewFolder && <NewFolderModal onClose={()=>setShowNewFolder(false)} onCreated={()=>{setRefreshKey(k=>k+1);navigate('dashboard')}} />}
       {showPerms && <PermissionsView folderId={showPerms} onClose={()=>setShowPerms(null)} />}
     </div>
   );
