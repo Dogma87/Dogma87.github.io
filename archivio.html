@@ -476,7 +476,7 @@ function Dashboard({ user, onNav }) {
         <div className="folders">
           {folders.map(f => (
             <div key={f._id} className="folder-card" onClick={()=>onNav('folder', f._id)}>
-              <div className="folder-icon"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+              <div className="folder-icon" style={{background:'rgba(242,201,76,0.12)'}}><svg viewBox="0 0 24 24" fill="#F2C94C" stroke="#DBA632" strokeWidth="1"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
               <div><div className="folder-name">{f.nome}</div><div className="folder-meta">{f.descrizione || 'Cartella'}</div></div>
             </div>
           ))}
@@ -658,15 +658,13 @@ function FolderView({ folderId, user, onNav }) {
               })}
 
               {/* ── Subfolders after ── */}
-              {subfolders.length > 0 && files.length > 0 && (
-                <tr><td colSpan="5" style={{padding:'6px 16px',background:'var(--gray-50)',borderTop:'1px solid var(--gray-200)'}}><span style={{fontSize:'.7rem',color:'var(--gray-400)',textTransform:'uppercase',letterSpacing:'.5px',fontWeight:600}}>Sottocartelle</span></td></tr>
-              )}
+              
               {subfolders.map(sf => (
                 <tr key={sf._id} style={{cursor:'pointer'}} onClick={()=>onNav('folder', sf._id)}>
                   <td>
                     <div className="file-name">
-                      <div style={{width:32,height:32,borderRadius:6,background:'var(--gray-100)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray-500)" strokeWidth="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                      <div style={{width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#F2C94C" stroke="#DBA632" strokeWidth="1"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                       </div>
                       <span style={{fontWeight:500,color:'var(--gray-800)'}}>{sf.nome}</span>
                     </div>
