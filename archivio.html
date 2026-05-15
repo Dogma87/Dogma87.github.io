@@ -232,7 +232,7 @@ function formatSize(bytes) {
 }
 
 // ─── Login ───
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin, onForgot }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -262,7 +262,139 @@ function LoginScreen({ onLogin }) {
         <input className="login-field" type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} required />
         <button className="login-btn" disabled={loading}>{loading ? 'Accesso...' : 'Accedi'}</button>
         {error && <p className="login-error">{error}</p>}
+        <a href="#" className="login-back" style={{marginTop:12,display:'block'}} onClick={e=>{e.preventDefault();onForgot()}}>Password dimenticata?</a>
         <a href="index.html" className="login-back">← Torna al sito</a>
+      </form>
+    </div>
+  );
+}
+
+
+// ─── Setup Password (from invite) ───
+function SetupPasswordScreen({ token, onDone }) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (password !== confirm) { setError('Le password non coincidono'); return; }
+    if (password.length < 8) { setError('Minimo 8 caratteri'); return; }
+    setLoading(true); setError('');
+    try {
+      await api('/auth/setup-password', { method: 'POST', body: JSON.stringify({ token, password }) });
+      setSuccess(true);
+    } catch (err) { setError(err.message); }
+    setLoading(false);
+  }
+
+  if (success) return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <h1 style={{color:'var(--green)'}}>Password impostata!</h1>
+        <p className="sub">Ora puoi accedere con le tue credenziali.</p>
+        <button className="login-btn" onClick={onDone}>Vai al login</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="login-wrap">
+      <form className="login-card" onSubmit={handleSubmit}>
+        <img src={LOGO} alt="Logo" className="login-logo" />
+        <h1>Imposta password</h1>
+        <p className="sub">Scegli una password sicura per il tuo account</p>
+        <input className="login-field" type="password" placeholder="Nuova password (min 8 caratteri)" value={password} onChange={e=>setPassword(e.target.value)} required minLength={8} autoFocus />
+        <input className="login-field" type="password" placeholder="Conferma password" value={confirm} onChange={e=>setConfirm(e.target.value)} required />
+        <button className="login-btn" disabled={loading}>{loading ? 'Salvataggio...' : 'Imposta password'}</button>
+        {error && <p className="login-error">{error}</p>}
+      </form>
+    </div>
+  );
+}
+
+// ─── Forgot Password ───
+function ForgotPasswordScreen({ onBack }) {
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await api('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+    } catch(e) {}
+    setSent(true);
+    setLoading(false);
+  }
+
+  if (sent) return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <h1>Controlla la tua email</h1>
+        <p className="sub">Se l'indirizzo è registrato, riceverai un link per reimpostare la password.</p>
+        <button className="login-btn" onClick={onBack}>Torna al login</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="login-wrap">
+      <form className="login-card" onSubmit={handleSubmit}>
+        <img src={LOGO} alt="Logo" className="login-logo" />
+        <h1>Password dimenticata?</h1>
+        <p className="sub">Inserisci la tua email e ti invieremo un link per reimpostarla</p>
+        <input className="login-field" type="email" placeholder="La tua email" value={email} onChange={e=>setEmail(e.target.value)} required autoFocus />
+        <button className="login-btn" disabled={loading}>{loading ? 'Invio...' : 'Invia link'}</button>
+        <a href="#" className="login-back" onClick={e=>{e.preventDefault();onBack()}}>\u2190 Torna al login</a>
+      </form>
+    </div>
+  );
+}
+
+// ─── Reset Password (from email link) ───
+function ResetPasswordScreen({ token, onDone }) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (password !== confirm) { setError('Le password non coincidono'); return; }
+    if (password.length < 8) { setError('Minimo 8 caratteri'); return; }
+    setLoading(true); setError('');
+    try {
+      await api('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) });
+      setSuccess(true);
+    } catch (err) { setError(err.message); }
+    setLoading(false);
+  }
+
+  if (success) return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <h1 style={{color:'var(--green)'}}>Password aggiornata!</h1>
+        <p className="sub">Ora puoi accedere con la nuova password.</p>
+        <button className="login-btn" onClick={onDone}>Vai al login</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="login-wrap">
+      <form className="login-card" onSubmit={handleSubmit}>
+        <img src={LOGO} alt="Logo" className="login-logo" />
+        <h1>Reimposta password</h1>
+        <p className="sub">Scegli una nuova password</p>
+        <input className="login-field" type="password" placeholder="Nuova password (min 8 caratteri)" value={password} onChange={e=>setPassword(e.target.value)} required minLength={8} autoFocus />
+        <input className="login-field" type="password" placeholder="Conferma password" value={confirm} onChange={e=>setConfirm(e.target.value)} required />
+        <button className="login-btn" disabled={loading}>{loading ? 'Salvataggio...' : 'Salva nuova password'}</button>
+        {error && <p className="login-error">{error}</p>}
       </form>
     </div>
   );
@@ -468,7 +600,7 @@ function FolderView({ folderId, user, onNav }) {
 function UsersView({ onNav }) {
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ nome:'', email:'', password:'', ruolo:'collaboratore' });
+  const [form, setForm] = useState({ nome:'', email:'', ruolo:'collaboratore' });
   const [error, setError] = useState('');
 
   useEffect(() => { api('/auth/users').then(r => setUsers(r.data)).catch(()=>{}); }, []);
@@ -478,7 +610,7 @@ function UsersView({ onNav }) {
     try {
       await api('/auth/users', { method: 'POST', body: JSON.stringify(form) });
       setShowModal(false);
-      setForm({ nome:'', email:'', password:'', ruolo:'collaboratore' });
+      setForm({ nome:'', email:'', ruolo:'collaboratore' });
       api('/auth/users').then(r => setUsers(r.data));
     } catch (err) { setError(err.message); }
   }
@@ -511,7 +643,7 @@ function UsersView({ onNav }) {
             <h3>Nuovo utente</h3>
             <div className="modal-field"><label>Nome</label><input value={form.nome} onChange={e=>setForm({...form,nome:e.target.value})} required /></div>
             <div className="modal-field"><label>Email</label><input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} required /></div>
-            <div className="modal-field"><label>Password (min 8 caratteri)</label><input type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} required minLength={8} /></div>
+            
             <div className="modal-field"><label>Ruolo</label><select value={form.ruolo} onChange={e=>setForm({...form,ruolo:e.target.value})}><option value="collaboratore">Collaboratore</option><option value="cliente">Cliente</option></select></div>
             {error && <p style={{color:'var(--red)',fontSize:'.82rem'}}>{error}</p>}
             <div className="modal-actions">
@@ -662,6 +794,22 @@ function PermissionsView({ folderId, onClose }) {
 function App() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState('dashboard');
+  const [authView, setAuthView] = useState('login'); // login, forgot, setup, reset
+  const [authToken, setAuthToken] = useState(null);
+
+  // Parse hash for invite/reset tokens
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('setup?token=')) {
+      const token = hash.split('token=')[1];
+      setAuthToken(token);
+      setAuthView('setup');
+    } else if (hash.includes('reset?token=')) {
+      const token = hash.split('token=')[1];
+      setAuthToken(token);
+      setAuthView('reset');
+    }
+  }, []);
   const [viewId, setViewId] = useState(null);
   const [notifCount, setNotifCount] = useState(0);
   const [showPerms, setShowPerms] = useState(null);
@@ -702,7 +850,12 @@ function App() {
     setView('dashboard');
   }
 
-  if (!user) return <LoginScreen onLogin={u => { setUser(u); loadNotifCount(); }} />;
+  if (!user) {
+    if (authView === 'setup' && authToken) return <SetupPasswordScreen token={authToken} onDone={()=>{setAuthView('login');setAuthToken(null);window.location.hash='';}} />;
+    if (authView === 'reset' && authToken) return <ResetPasswordScreen token={authToken} onDone={()=>{setAuthView('login');setAuthToken(null);window.location.hash='';}} />;
+    if (authView === 'forgot') return <ForgotPasswordScreen onBack={()=>setAuthView('login')} />;
+    return <LoginScreen onLogin={u => { setUser(u); loadNotifCount(); }} onForgot={()=>setAuthView('forgot')} />;
+  }
 
   const isAdmin = user.ruolo === 'superadmin';
 
