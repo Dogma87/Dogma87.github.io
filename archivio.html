@@ -590,7 +590,7 @@ function FolderView({ folderId, user, onNav }) {
                     <td>
                       <div style={{display:'flex',gap:6}}>
                         <button className="btn btn-primary btn-sm" onClick={()=>handleDownload(f._id, f.nome)}>Scarica</button>
-                        <button className="btn btn-ghost btn-sm" onClick={()=>handleNewVersion(f._id)}>Aggiorna</button>
+                        <button className="btn btn-ghost btn-sm" onClick={()=>handleNewVersion(f._id)}>Carica una versione aggiornata</button>
                         {f.versioneAttuale > 1 && <button className="btn btn-ghost btn-sm" onClick={()=>setShowVersions(f)}>Versioni</button>}
                         {(user.ruolo==='superadmin') && <button className="btn btn-sm" style={{color:'var(--red)',background:'none',border:'1px solid var(--red)',borderRadius:'8px',fontSize:'.78rem',padding:'6px 12px'}} onClick={()=>handleDelete(f._id)}>Elimina</button>}
                       </div>
