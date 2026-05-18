@@ -677,8 +677,7 @@ function FolderView({ folderId, user, onNav }) {
                     <td style={{fontSize:'.82rem',color:'var(--gray-400)'}}>{lastV ? formatSize(lastV.dimensione) : '—'}</td>
                     <td style={{fontSize:'.82rem',color:'var(--gray-400)'}}>{timeAgo(f.updatedAt)}</td>
                     <td>
-                      <div style={{display:'flex',gap:6,alignItems:'center'}}>
-                        {/* Online editing buttons */}
+                      <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
                         {(f.editingBy || editingFile === f._id) ? (
                           <React.Fragment>
                             <span style={{fontSize:'.72rem',color:'var(--amber)',fontWeight:600,display:'flex',alignItems:'center',gap:4}}>
@@ -703,12 +702,14 @@ function FolderView({ folderId, user, onNav }) {
                             <button className="btn btn-ghost btn-sm" onClick={()=>handleNewVersion(f._id)} title="Carica versione aggiornata" style={{padding:'6px 10px'}}>
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gray-500)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                             </button>
-                        {f.versioneAttuale > 1 && <button className="btn btn-ghost btn-sm" onClick={()=>setShowVersions(f)} title="Storico versioni" style={{padding:'6px 10px'}}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gray-500)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        </button>}
-                        {(isAdmin || isFileOwner(f, user)) && <button className="btn btn-ghost btn-sm" onClick={()=>handleDelete(f._id)} title="Elimina" style={{padding:'6px 10px'}}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        </button>}
+                            {f.versioneAttuale > 1 && <button className="btn btn-ghost btn-sm" onClick={()=>setShowVersions(f)} title="Storico versioni" style={{padding:'6px 10px'}}>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gray-500)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            </button>}
+                            {(isAdmin || isFileOwner(f, user)) && <button className="btn btn-ghost btn-sm" onClick={()=>handleDelete(f._id)} title="Elimina" style={{padding:'6px 10px'}}>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>}
+                          </React.Fragment>
+                        )}
                       </div>
                     </td>
                   </tr>
