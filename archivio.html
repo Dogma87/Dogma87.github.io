@@ -983,33 +983,61 @@ function VersionHistory({ fileId, fileName, onClose, onDownload }) {
 // ─── OnlyOffice Editor ───
 function OnlyOfficeEditor({ config, editorUrl, onClose }) {
   const containerRef = useRef(null);
+  const editorRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     // Load OnlyOffice JS API
+    if (window.DocsAPI) { setLoaded(true); return; }
     const script = document.createElement('script');
     script.src = `${editorUrl}/web-apps/apps/api/documents/api.js`;
     script.onload = () => setLoaded(true);
     script.onerror = () => alert('Impossibile caricare l\'editor. Verifica la connessione.');
     document.head.appendChild(script);
-    return () => { try { document.head.removeChild(script); } catch(e) {} };
   }, [editorUrl]);
 
   useEffect(() => {
-    if (!loaded || !containerRef.current) return;
+    if (!loaded || !containerRef.current || editorRef.current) return;
     try {
-      new DocsAPI.DocEditor('onlyoffice-editor', config);
+      const editorConfig = {
+        ...config,
+        events: {
+          onDocumentReady: () => console.log('[OnlyOffice] Documento pronto'),
+          onError: (e) => console.error('[OnlyOffice] Errore:', e),
+          onDocumentStateChange: (e) => {
+            // e.data = true means document was modified
+            if (e.data) console.log('[OnlyOffice] Documento modificato');
+          },
+        },
+      };
+      editorRef.current = new DocsAPI.DocEditor('onlyoffice-editor', editorConfig);
     } catch(e) {
       console.error('Editor init error:', e);
       alert('Errore apertura editor: ' + e.message);
     }
   }, [loaded, config]);
 
+  function handleClose() {
+    setSaving(true);
+    if (editorRef.current) {
+      try { editorRef.current.destroyEditor(); } catch(e) {}
+      editorRef.current = null;
+    }
+    // Wait for OnlyOffice to send the callback before closing
+    setTimeout(() => {
+      setSaving(false);
+      onClose();
+    }, 4000);
+  }
+
   return (
     <div className="editor-overlay">
       <div className="editor-topbar">
         <h3>{config.document?.title || 'Documento'}</h3>
-        <button className="topbar-btn" onClick={onClose}>✕ Chiudi editor</button>
+        <button className="topbar-btn" onClick={handleClose} disabled={saving}>
+          {saving ? 'Salvataggio in corso...' : '✕ Chiudi e salva'}
+        </button>
       </div>
       <div className="editor-container">
         <div id="onlyoffice-editor" ref={containerRef} style={{width:'100%',height:'100%'}}></div>
