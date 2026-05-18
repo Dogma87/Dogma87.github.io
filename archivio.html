@@ -583,7 +583,11 @@ function FolderView({ folderId, user, onNav }) {
 
   function handleCloseEditor() {
     setEditingFile(null);
-    load(); // refresh file list to show new version
+    // Wait for OnlyOffice callback to save the file before refreshing
+    setTimeout(() => {
+      load();
+      setTimeout(() => load(), 5000); // refresh again after 5s to catch late saves
+    }, 3000);
   }
 
   if (!folder) return <div className="empty"><p>Caricamento...</p></div>;
