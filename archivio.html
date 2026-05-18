@@ -155,6 +155,12 @@ input,select,textarea{font-family:var(--font)}
 
 /* ── Responsive ── */
 
+
+/* ── OnlyOffice Editor ── */
+.editor-overlay{position:fixed;inset:0;background:var(--white);z-index:1000;display:flex;flex-direction:column}
+.editor-topbar{background:var(--navy);color:var(--white);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.editor-topbar h3{font-size:.9rem;font-weight:600;margin:0}
+.editor-container{flex:1;width:100%;height:100%}
 /* ── Explorer row hover ── */
 .files-table tbody tr{transition:background .15s}
 .files-table tbody tr:hover{background:var(--gray-50)}
@@ -502,7 +508,6 @@ function FolderView({ folderId, user, onNav }) {
   const [showNewSubfolder, setShowNewSubfolder] = useState(false);
   const fileInput = useRef(null);
   const [editingFile, setEditingFile] = useState(null);
-  const [savingOnline, setSavingOnline] = useState(false);
 
   const load = useCallback(() => {
     api(`/folders/${folderId}`).then(r => {
@@ -569,33 +574,16 @@ function FolderView({ folderId, user, onNav }) {
 
   async function handleEditOnline(fileId) {
     try {
-      setEditingFile(fileId);
-      const res = await api(`/files/${fileId}/edit-online`, { method: 'POST' });
-      window.open(res.editUrl, '_blank');
+      const res = await api(`/files/${fileId}/editor-config`);
+      setEditingFile({ fileId, config: res.config, editorUrl: res.editorUrl });
     } catch (err) {
       alert(err.message);
-      setEditingFile(null);
     }
   }
 
-  async function handleSaveOnline(fileId) {
-    if (!confirm('Hai terminato le modifiche in Office? Il file verrà salvato come nuova versione.')) return;
-    setSavingOnline(true);
-    try {
-      await api(`/files/${fileId}/save-online`, { method: 'POST' });
-      setEditingFile(null);
-      load();
-    } catch (err) { alert(err.message); }
-    setSavingOnline(false);
-  }
-
-  async function handleCancelOnline(fileId) {
-    if (!confirm('Annullare la modifica? Le modifiche fatte in Office andranno perse.')) return;
-    try {
-      await api(`/files/${fileId}/cancel-online`, { method: 'POST' });
-      setEditingFile(null);
-      load();
-    } catch (err) { alert(err.message); }
+  function handleCloseEditor() {
+    setEditingFile(null);
+    load(); // refresh file list to show new version
   }
 
   if (!folder) return <div className="empty"><p>Caricamento...</p></div>;
@@ -678,22 +666,7 @@ function FolderView({ folderId, user, onNav }) {
                     <td style={{fontSize:'.82rem',color:'var(--gray-400)'}}>{timeAgo(f.updatedAt)}</td>
                     <td>
                       <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
-                        {(f.editingBy || editingFile === f._id) ? (
-                          <React.Fragment>
-                            <span style={{fontSize:'.72rem',color:'var(--amber)',fontWeight:600,display:'flex',alignItems:'center',gap:4}}>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--amber)" stroke="none"><circle cx="12" cy="12" r="6"/></svg>
-                              In modifica
-                            </span>
-                            <button className="btn btn-primary btn-sm" onClick={()=>handleSaveOnline(f._id)} disabled={savingOnline} style={{gap:4,fontSize:'.75rem'}}>
-                              {savingOnline ? '...' : 'Salva modifiche'}
-                            </button>
-                            <button className="btn btn-ghost btn-sm" onClick={()=>handleCancelOnline(f._id)} style={{fontSize:'.75rem',color:'var(--red)'}}>
-                              Annulla
-                            </button>
-                          </React.Fragment>
-                        ) : (
-                          <React.Fragment>
-                            {isEditableOnline(ext) && <button className="btn btn-ghost btn-sm" onClick={()=>handleEditOnline(f._id)} title="Modifica in Office 365" style={{padding:'6px 10px'}}>
+                        {isEditableOnline(ext) && <button className="btn btn-ghost btn-sm" onClick={()=>handleEditOnline(f._id)} title="Modifica online" style={{padding:'6px 10px'}}>
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             </button>}
                             <button className="btn btn-ghost btn-sm" onClick={()=>handleDownload(f._id, f.nome)} title="Scarica" style={{padding:'6px 10px'}}>
@@ -708,8 +681,7 @@ function FolderView({ folderId, user, onNav }) {
                             {(isAdmin || isFileOwner(f, user)) && <button className="btn btn-ghost btn-sm" onClick={()=>handleDelete(f._id)} title="Elimina" style={{padding:'6px 10px'}}>
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                             </button>}
-                          </React.Fragment>
-                        )}
+
                       </div>
                     </td>
                   </tr>
@@ -746,6 +718,7 @@ function FolderView({ folderId, user, onNav }) {
       </div>
 
       {/* Modals */}
+      {editingFile && <OnlyOfficeEditor config={editingFile.config} editorUrl={editingFile.editorUrl} onClose={handleCloseEditor} />}
       {showNewSubfolder && (
         <div className="modal-overlay" onClick={()=>setShowNewSubfolder(false)}>
           <form className="modal" onClick={e=>e.stopPropagation()} onSubmit={async (e)=>{
@@ -997,6 +970,45 @@ function VersionHistory({ fileId, fileName, onClose, onDownload }) {
           </table>
         )}
         <div className="modal-actions" style={{marginTop:20}}><button className="btn btn-ghost" onClick={onClose}>Chiudi</button></div>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── OnlyOffice Editor ───
+function OnlyOfficeEditor({ config, editorUrl, onClose }) {
+  const containerRef = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    // Load OnlyOffice JS API
+    const script = document.createElement('script');
+    script.src = `${editorUrl}/web-apps/apps/api/documents/api.js`;
+    script.onload = () => setLoaded(true);
+    script.onerror = () => alert('Impossibile caricare l\'editor. Verifica la connessione.');
+    document.head.appendChild(script);
+    return () => { try { document.head.removeChild(script); } catch(e) {} };
+  }, [editorUrl]);
+
+  useEffect(() => {
+    if (!loaded || !containerRef.current) return;
+    try {
+      new DocsAPI.DocEditor('onlyoffice-editor', config);
+    } catch(e) {
+      console.error('Editor init error:', e);
+      alert('Errore apertura editor: ' + e.message);
+    }
+  }, [loaded, config]);
+
+  return (
+    <div className="editor-overlay">
+      <div className="editor-topbar">
+        <h3>{config.document?.title || 'Documento'}</h3>
+        <button className="topbar-btn" onClick={onClose}>✕ Chiudi editor</button>
+      </div>
+      <div className="editor-container">
+        <div id="onlyoffice-editor" ref={containerRef} style={{width:'100%',height:'100%'}}></div>
       </div>
     </div>
   );
