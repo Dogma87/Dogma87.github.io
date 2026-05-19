@@ -507,6 +507,7 @@ function FolderView({ folderId, user, onNav }) {
   const [showVersions, setShowVersions] = useState(null);
   const [showNewSubfolder, setShowNewSubfolder] = useState(false);
   const fileInput = useRef(null);
+  const [notifyFile, setNotifyFile] = useState(null);
   const [editingFile, setEditingFile] = useState(null);
 
   const load = useCallback(() => {
@@ -682,7 +683,10 @@ function FolderView({ folderId, user, onNav }) {
                             {f.versioneAttuale > 1 && <button className="btn btn-ghost btn-sm" onClick={()=>setShowVersions(f)} title="Storico versioni" style={{padding:'6px 10px'}}>
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gray-500)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                             </button>}
-                            {(isAdmin || isFileOwner(f, user)) && <button className="btn btn-ghost btn-sm" onClick={()=>handleDelete(f._id)} title="Elimina" style={{padding:'6px 10px'}}>
+                            {isAdmin && <button className="btn btn-ghost btn-sm" onClick={()=>setNotifyFile(f)} title="Notifica utenti" style={{padding:'6px 10px'}}>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                            </button>}
+                        {(isAdmin || isFileOwner(f, user)) && <button className="btn btn-ghost btn-sm" onClick={()=>handleDelete(f._id)} title="Elimina" style={{padding:'6px 10px'}}>
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                             </button>}
 
@@ -722,6 +726,7 @@ function FolderView({ folderId, user, onNav }) {
       </div>
 
       {/* Modals */}
+      {notifyFile && <NotifyModal fileId={notifyFile._id} fileName={notifyFile.nome} folderId={folderId} onClose={()=>setNotifyFile(null)} />}
       {editingFile && <OnlyOfficeEditor config={editingFile.config} editorUrl={editingFile.editorUrl} onClose={handleCloseEditor} />}
       {showNewSubfolder && (
         <div className="modal-overlay" onClick={()=>setShowNewSubfolder(false)}>
@@ -979,6 +984,79 @@ function VersionHistory({ fileId, fileName, onClose, onDownload }) {
   );
 }
 
+
+
+// ─── Notify Modal (superadmin) ───
+function NotifyModal({ fileId, fileName, folderId, onClose }) {
+  const [users, setUsers] = useState([]);
+  const [selected, setSelected] = useState([]);
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    api('/auth/users').then(r => {
+      const filtered = r.data.filter(u => u.ruolo !== 'superadmin' && u.attivo);
+      setUsers(filtered);
+      setSelected(filtered.map(u => u._id));
+    }).catch(()=>{});
+  }, []);
+
+  async function handleSend() {
+    setSending(true);
+    try {
+      const dest = selected.length === users.length ? 'tutti' : selected;
+      await api(`/files/${fileId}/notify`, {
+        method: 'POST',
+        body: JSON.stringify({ destinatari: dest, messaggio: message || undefined }),
+      });
+      setSent(true);
+      setTimeout(onClose, 1500);
+    } catch(e) { alert(e.message); }
+    setSending(false);
+  }
+
+  if (sent) return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()} style={{textAlign:'center',padding:'40px'}}>
+        <div style={{fontSize:'2rem',marginBottom:12}}>✓</div>
+        <p style={{color:'var(--green)',fontWeight:600}}>Notifica inviata!</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <h3>Notifica su "{fileName}"</h3>
+        <div className="modal-field">
+          <label>Destinatari</label>
+          <div style={{maxHeight:150,overflow:'auto',border:'1px solid var(--gray-200)',borderRadius:8,padding:8}}>
+            {users.map(u => (
+              <label key={u._id} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0',fontSize:'.85rem',cursor:'pointer'}}>
+                <input type="checkbox" checked={selected.includes(u._id)} onChange={e => {
+                  if (e.target.checked) setSelected([...selected, u._id]);
+                  else setSelected(selected.filter(id => id !== u._id));
+                }} />
+                {u.nome} <span style={{color:'var(--gray-400)',fontSize:'.75rem'}}>({u.ruolo})</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="modal-field">
+          <label>Messaggio personalizzato (opzionale)</label>
+          <input value={message} onChange={e=>setMessage(e.target.value)} placeholder="es. Documento aggiornato, verifica le modifiche" />
+        </div>
+        <div className="modal-actions">
+          <button className="btn btn-ghost" onClick={onClose}>Annulla</button>
+          <button className="btn btn-primary" onClick={handleSend} disabled={sending || selected.length === 0}>
+            {sending ? 'Invio...' : `Notifica ${selected.length} utenti`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── OnlyOffice Editor ───
 function OnlyOfficeEditor({ config, editorUrl, onClose }) {
